@@ -1,0 +1,185 @@
+{
+  "version": "FA2-nft-no_totsup",
+  "description": "This is a didactic reference implementation of FA2, a.k.a. TZIP-012, using SmartPy.\n\nThis particular contract uses the configuration named: FA2-nft-no_totsup.",
+  "interfaces": [ "TZIP-012", "TZIP-016" ],
+  "authors": [ "Seb Mondet <https://seb.mondet.org>" ],
+  "homepage": "https://gitlab.com/smondet/fa2-smartpy",
+  "views": [
+    {
+      "name": "get_balance",
+      "pure": true,
+      "description": "This is the `get_balance` view defined in TZIP-12.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%owner" ] }, { "prim": "nat", "annots": [ "%token_id" ] } ] },
+            "returnType": { "prim": "nat" },
+            "code": [
+              { "prim": "UNPAIR" },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "GET", "args": [ { "int": "6" } ] },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "CDR" },
+              { "prim": "MEM" },
+              { "prim": "IF", "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "FA2_TOKEN_UNDEFINED" } ] }, { "prim": "FAILWITH" } ] ] },
+              { "prim": "SWAP" },
+              { "prim": "CAR" },
+              { "prim": "GET", "args": [ { "int": "4" } ] },
+              { "prim": "SWAP" },
+              { "prim": "GET" },
+              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "504" } ] }, { "prim": "FAILWITH" } ], [] ] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "does_token_exist",
+      "pure": true,
+      "description": "Ask whether a token ID is exists.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "nat" },
+            "returnType": { "prim": "bool" },
+            "code": [ { "prim": "UNPAIR" }, { "prim": "SWAP" }, { "prim": "GET", "args": [ { "int": "6" } ] }, { "prim": "SWAP" }, { "prim": "MEM" } ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "count_tokens",
+      "pure": true,
+      "description": "Get how many tokens are in this FA2 contract.\n        ",
+      "implementations": [ { "michelsonStorageView": { "returnType": { "prim": "nat" }, "code": [ { "prim": "CAR" }, { "prim": "GET", "args": [ { "int": "3" } ] } ] } } ]
+    },
+    {
+      "name": "all_tokens",
+      "pure": true,
+      "description": "\n            This view is specified (but optional) in the standard.\n\n            This contract is built with assume_consecutive_token_ids =\n            True, so we return a list constructed from the number of tokens.\n            ",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "returnType": { "prim": "list", "args": [ { "prim": "nat" } ] },
+            "code": [
+              { "prim": "DUP" },
+              { "prim": "CAR" },
+              { "prim": "GET", "args": [ { "int": "3" } ] },
+              { "prim": "NIL", "args": [ { "prim": "nat" } ] },
+              { "prim": "SWAP" },
+              { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "0" } ] },
+              { "prim": "DUP" },
+              { "prim": "DUP", "args": [ { "int": "3" } ] },
+              { "prim": "COMPARE" },
+              { "prim": "GT" },
+              {
+                "prim": "LOOP",
+                "args": [
+                  [
+                    { "prim": "DUP" },
+                    { "prim": "DIG", "args": [ { "int": "3" } ] },
+                    { "prim": "SWAP" },
+                    { "prim": "CONS" },
+                    { "prim": "DUG", "args": [ { "int": "2" } ] },
+                    { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "1" } ] },
+                    { "prim": "ADD" },
+                    { "prim": "DUP" },
+                    { "prim": "DUP", "args": [ { "int": "3" } ] },
+                    { "prim": "COMPARE" },
+                    { "prim": "GT" }
+                  ]
+                ]
+              },
+              { "prim": "DROP", "args": [ { "int": "2" } ] },
+              { "prim": "SWAP" },
+              { "prim": "DROP" },
+              { "prim": "NIL", "args": [ { "prim": "nat" } ] },
+              { "prim": "SWAP" },
+              { "prim": "ITER", "args": [ [ { "prim": "CONS" } ] ] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "is_operator",
+      "pure": true,
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": {
+              "prim": "pair",
+              "args": [
+                { "prim": "address", "annots": [ "%owner" ] },
+                { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%operator" ] }, { "prim": "nat", "annots": [ "%token_id" ] } ] }
+              ]
+            },
+            "returnType": { "prim": "bool" },
+            "code": [
+              { "prim": "UNPAIR" },
+              { "prim": "SWAP" },
+              { "prim": "GET", "args": [ { "int": "3" } ] },
+              { "prim": "CDR" },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "GET", "args": [ { "int": "4" } ] },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "GET", "args": [ { "int": "3" } ] },
+              { "prim": "SWAP" },
+              { "prim": "CAR" },
+              { "prim": "PAIR", "args": [ { "int": "3" } ] },
+              { "prim": "MEM" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "token_metadata",
+      "pure": true,
+      "description": "Get Token Metadata",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "nat" },
+            "returnType": {
+              "prim": "pair",
+              "args": [ { "prim": "nat", "annots": [ "%token_id" ] }, { "prim": "map", "args": [ { "prim": "string" }, { "prim": "bytes" } ], "annots": [ "%token_info" ] } ]
+            },
+            "code": [
+              { "prim": "UNPAIR" },
+              { "prim": "SWAP" },
+              { "prim": "GET", "args": [ { "int": "6" } ] },
+              { "prim": "SWAP" },
+              { "prim": "GET" },
+              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "620" } ] }, { "prim": "FAILWITH" } ], [] ] }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "source": { "tools": [ "SmartPy" ], "location": "https://gitlab.com/smondet/fa2-smartpy.git" },
+  "permissions": { "operator": "owner-or-operator-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook" },
+  "fa2-smartpy": {
+    "configuration": {
+      "add_mutez_transfer": false,
+      "allow_self_transfer": false,
+      "assume_consecutive_token_ids": true,
+      "force_layouts": true,
+      "lazy_entry_points": false,
+      "name": "FA2-nft-no_totsup",
+      "non_fungible": true,
+      "readable": true,
+      "single_asset": false,
+      "store_total_supply": false,
+      "support_operator": true,
+      "use_token_metadata_offchain_view": true
+    }
+  }
+}

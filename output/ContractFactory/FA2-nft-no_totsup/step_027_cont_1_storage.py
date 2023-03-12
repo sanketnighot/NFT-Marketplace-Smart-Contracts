@@ -1,0 +1,1 @@
+sp.record(last_sum = 0, operator_support = False)

@@ -1,0 +1,1 @@
+sp.record(address = sp.address('tz1Ns3YQJR6piMZ8GrD2iYu94Ybi1HFfNyBP'), amount = 100, metadata = {'decimals' : sp.bytes('0x30'), 'name' : sp.bytes('0x546865205365636f6e6420546f6b656e'), 'symbol' : sp.bytes('0x544b31')}, token_id = 2)

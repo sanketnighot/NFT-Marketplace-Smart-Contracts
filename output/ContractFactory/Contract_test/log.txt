@@ -1,0 +1,42 @@
+Comment...
+ h1: Quilt NFT Collection Contract Factory
+Table Of Contents
+
+ Quilt NFT Collection Contract Factory
+ Code
+Computing sp.list([sp.test_account("Mark"), sp.test_account("Elon"), sp.test_account("Admin")])...
+ => [sp.record(seed = 'Mark', address = sp.address('tz1fDKASJtJHBMM6tXadfZGZhVRSC1igwSSJ'), public_key = sp.key('edpkuSrBBC9pf2dnU9pvmQcNc67iCpSr3qhKi31GPesC4rmK4jvP1S'), public_key_hash = sp.key_hash('tz1fDKASJtJHBMM6tXadfZGZhVRSC1igwSSJ'), secret_key = sp.secret_key('edskRq8Dw2zmQ4DQpXrFkFxUWfyrnFqAMgjgiL91FJp165R3qepZYop3BxhVL5a86jNHHfGtDNt1XDNwWmFQ45GMsrNaJQR93A')), sp.record(seed = 'Elon', address = sp.address('tz1fEyTZXGgdjZJxb8zBHH2X2JyS76HacR5a'), public_key = sp.key('edpkuuLHKXVfPw78kTY3NHihGxe43a1V93EcsJCan2i59v45mMcbX8'), public_key_hash = sp.key_hash('tz1fEyTZXGgdjZJxb8zBHH2X2JyS76HacR5a'), secret_key = sp.secret_key('edskRpzTWVGkucqmaETzVJ6ayDq2kzAvxyeVg3LZwLP8Esfbxzrys3xfS78t7MoBh4fXSZ81mQyzhUE25ZVwaTP8LnR2SuVDhX')), sp.record(seed = 'Admin', address = sp.address('tz1SfRoaCkrBkXqTzhz67QYVPJAU9Y2g48kq'), public_key = sp.key('edpktsi1daARKZVKBjLuW9UzBV4YNUELk58NBzZLYPHXsRcYmz5DYT'), public_key_hash = sp.key_hash('tz1SfRoaCkrBkXqTzhz67QYVPJAU9Y2g48kq'), secret_key = sp.secret_key('edskRpzTWV1MzaC7eSokmmujg55Dq9EBmx9SMZu2tyqv71jhcQn7ADrN1RG9Y6zPKNeJAvUV788uaLmdNhdK5RaBgG3SnbnCX9'))]
+Comment...
+ h1: Code
+Creating contract KT1TezoooozzSmartPyzzSTATiCzzzwwBFA1
+ -> {}
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_storage.tz 1
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_storage.json 1
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_sizes.csv 2
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_storage.py 1
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_types.py 7
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_contract.tz 891
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_contract.json 1333
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_contract.py 29
+ => ./output/ContractFactory/Contract_test/step_004_cont_0_contract.py.html 2137
+ => ./output/ContractFactory/Contract_test/step_005_cont_0_params.py 1
+ => ./output/ContractFactory/Contract_test/step_005_cont_0_params.tz 1
+ => ./output/ContractFactory/Contract_test/step_005_cont_0_params.json 1
+Executing deploy_fa2({'' : sp.bytes('0x68747470733a2f2f6578616d706c65312e636f6d')})...
+ -> {Elt "tz1SfRoaCkrBkXqTzhz67QYVPJAU9Y2g48kq" {"KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"}}
+  + Create Contract(address: KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU, baker: sp.none)sp.record(administrator = sp.address('KT1TezoooozzSmartPyzzSTATiCzzzwwBFA1'), all_tokens = 0, ledger = {}, metadata = {'' : sp.bytes('0x68747470733a2f2f6578616d706c65312e636f6d')}, operators = {}, paused = False, token_metadata = {})
+  + Event(tag: "CONTRACT_DEPLOYED")
+sp.record(contract_address = sp.address('KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU'), deployed_by = sp.address('tz1SfRoaCkrBkXqTzhz67QYVPJAU9Y2g48kq'), event = 'CONTRACT_DEPLOYED')
+Creating contract KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU
+ -> (Pair (Pair "KT1TezoooozzSmartPyzzSTATiCzzzwwBFA1" (Pair 0 {})) (Pair (Pair {Elt "" 0x68747470733a2f2f6578616d706c65312e636f6d} {}) (Pair False {})))
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_storage.tz 1
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_storage.json 13
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_sizes.csv 2
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_storage.py 1
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_types.py 7
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_metadata.metadata_base.json 185
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_contract.tz 734
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_contract.json 1004
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_contract.py 83
+ => ./output/ContractFactory/Contract_test/step_005_cont_Dyn_0_contract.py.html 2190
+ => ./output/ContractFactory/Contract_test/log.html 2254

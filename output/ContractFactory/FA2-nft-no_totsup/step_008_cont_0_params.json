@@ -1,0 +1,17 @@
+{
+  "prim": "Pair",
+  "args": [
+    { "prim": "Pair", "args": [ { "string": "tz1WxrQuZ4CK1MBUa2GqUWK1yJ4J6EtG1Gwi" }, { "int": "50" } ] },
+    {
+      "prim": "Pair",
+      "args": [
+        [
+          { "prim": "Elt", "args": [ { "string": "decimals" }, { "bytes": "32" } ] },
+          { "prim": "Elt", "args": [ { "string": "name" }, { "bytes": "54686520546f6b656e205a65726f" } ] },
+          { "prim": "Elt", "args": [ { "string": "symbol" }, { "bytes": "544b30" } ] }
+        ],
+        { "int": "1" }
+      ]
+    }
+  ]
+}

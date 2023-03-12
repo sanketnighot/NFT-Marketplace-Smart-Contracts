@@ -1,0 +1,1 @@
+[sp.record(from_ = sp.address('tz1Ns3YQJR6piMZ8GrD2iYu94Ybi1HFfNyBP'), txs = [sp.record(to_ = sp.address('tz1Yy7DNgpD9Y34mW8jkYaXG4qfBqdSW72Gw'), token_id = 1, amount = 2)])]
