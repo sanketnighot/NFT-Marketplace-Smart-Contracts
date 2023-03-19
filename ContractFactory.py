@@ -47,6 +47,7 @@ class Batch_transfer:
     def item(self, from_, txs):
         v = sp.record(from_=from_, txs=txs)
         return sp.set_type_expr(v, self.get_transfer_type())
+
 class Contract(sp.Contract):
     def __init__(self):
         self.init(
