@@ -1,0 +1,80 @@
+{
+    "artifactUri": "ipfs://Qmbdvh56QMohwC5S4hn75T5uEYPiMrPJ1qUAeVyQ6M5gmM",
+    "attributes": [
+        {
+            "name": "Clan",
+            "value": "Platinum"
+        },
+        {
+            "name": "Multiplier",
+            "value": "5"
+        },
+        {
+            "name": "Discount",
+            "value": "20"
+        },
+        {
+            "name": "Early Access",
+            "value": "True"
+        }
+    ],
+    "creators": [
+        "tz1XfijmkUhZC4Ux1EUSvaH6zSePsshPqqJm"
+    ],
+    "date": "2022-09-11T18:35:36.465956Z",
+    "decimals": 0,
+    "description": "A Premium Member of Game Geeks Platinum Clan",
+    "displayUri": "ipfs://QmSVeJLAVzdZHcTwXFAiUgU6bnLD69dDvQXYyDmDMgjP3W",
+    "formats": [
+        {
+            "dimensions": {
+                "unit": "px",
+                "value": null
+            },
+            "fileName": "artifact.mp4",
+            "fileSize": 2867985,
+            "mimeType": "video/mp4",
+            "uri": "ipfs://Qmbdvh56QMohwC5S4hn75T5uEYPiMrPJ1qUAeVyQ6M5gmM"
+        },
+        {
+            "dimensions": {
+                "unit": "px",
+                "value": "250x250"
+            },
+            "fileName": "display.gif",
+            "fileSize": 1717134,
+            "mimeType": "image/gif",
+            "uri": "ipfs://QmSVeJLAVzdZHcTwXFAiUgU6bnLD69dDvQXYyDmDMgjP3W"
+        },
+        {
+            "dimensions": {
+                "unit": "px",
+                "value": "250x250"
+            },
+            "fileName": "thumbnail.gif",
+            "fileSize": 1717134,
+            "mimeType": "image/gif",
+            "uri": "ipfs://QmSVeJLAVzdZHcTwXFAiUgU6bnLD69dDvQXYyDmDMgjP3W"
+        }
+    ],
+    "image": "ipfs://QmSVeJLAVzdZHcTwXFAiUgU6bnLD69dDvQXYyDmDMgjP3W",
+    "minter": "KT1Aq4wWmVanpQhq4TTfjZXB5AjFpx15iQMM",
+    "mintingTool": "https://objkt.com/mintV2",
+    "name": "GeekyHead",
+    "rights": "No License / All Rights Reserved",
+    "royalties": {
+        "decimals": 4,
+        "shares": {
+            "tz1XfijmkUhZC4Ux1EUSvaH6zSePsshPqqJm": 300
+        }
+    },
+    "symbol": "OBJKTCOM",
+    "tags": [
+        "game geeks",
+        "gg",
+        "geekyheads",
+        "ghgg",
+        "platinum clan"
+    ],
+    "thumbnailUri": "ipfs://QmSVeJLAVzdZHcTwXFAiUgU6bnLD69dDvQXYyDmDMgjP3W"
+}

@@ -77,8 +77,6 @@ class Contract(sp.Contract):
         sp.set_type(token_id, sp.TNat)
         sp.set_type(metadata, sp.TMap(sp.TString, sp.TBytes))
         sp.verify(self.data.contracts[sp.sender].contains(contract), "INVALID_CONTRACT")
-        # sp.for addr in self.data.contracts[sp.sender]:
-        #     sp.if addr == contract:
         contractParams = sp.contract(sp.TRecord(address = sp.TAddress, amount = sp.TNat, metadata = sp.TMap(sp.TString, sp.TBytes), token_id = sp.TNat), contract, entry_point="mint").open_some()
         dataToBeSent = sp.record(address = sp.sender, amount = amount, metadata = metadata, token_id = token_id)
         sp.transfer(dataToBeSent,sp.mutez(0),contractParams)

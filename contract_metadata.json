@@ -1,0 +1,13 @@
+{
+    "authors": [
+        "tz1XfijmkUhZC4Ux1EUSvaH6zSePsshPqqJm"
+    ],
+    "description": "A Decentralized Gaming Hub built over Tezos Blockchain. https://gamegeeks.online",
+    "homepage": "https://objkt.com/collections",
+    "imageUri": "ipfs://Qma2kszMuEEGGccjdy1vCvVqWr2zb25rBGqnQ56X2LGrRG",
+    "interfaces": [
+        "TZIP-12"
+    ],
+    "name": "GeekyHeads",
+    "type": "collectible"
+}
