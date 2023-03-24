@@ -45,6 +45,23 @@ class Offer:
             expiry_time = _params.expiry_time
         )
 
+class Batch_transfer:
+    def get_transfer_type():
+        tx_type = sp.TRecord(to_=sp.TAddress,
+                             token_id=sp.TNat,
+                             amount=sp.TNat)
+        transfer_type = sp.TRecord(from_=sp.TAddress,
+                                   txs=sp.TList(tx_type)).layout(
+                                       ("from_", "txs"))
+        return transfer_type
+
+    def get_type():
+        return sp.TList(Batch_transfer.get_transfer_type())
+
+    def item(from_, txs):
+        v = sp.record(from_=from_, txs=txs)
+        return sp.set_type_expr(v, Batch_transfer.get_transfer_type())
+    
 class Marketplace(sp.Contract):
     def __init__(self, _mod):
         self.init(
@@ -56,6 +73,36 @@ class Marketplace(sp.Contract):
             offers = Offer.set_type(),
             pause = sp.bool(False)
         )
+
+    def transfer_token(self, contract, params_):
+        sp.set_type(contract, sp.TAddress)
+        sp.set_type(params_, sp.TList(
+                sp.TRecord(
+                    from_ = sp.TAddress, 
+                    txs = sp.TList(
+                        sp.TRecord(
+                            amount = sp.TNat, 
+                            to_ = sp.TAddress, 
+                            token_id = sp.TNat
+                        ).layout(("to_", ("token_id", "amount")))
+                    )
+                )
+            .layout(("from_", "txs"))))
+        #TODO: Check weather the nft exists with sender
+        contractParams = sp.contract(sp.TList(
+                sp.TRecord(
+                    from_ = sp.TAddress, 
+                    txs = sp.TList(
+                        sp.TRecord(
+                            amount = sp.TNat, 
+                            to_ = sp.TAddress, 
+                            token_id = sp.TNat
+                        ).layout(("to_", ("token_id", "amount")))
+                    )
+                )
+            .layout(("from_", "txs"))), contract, entry_point="transfer").open_some()
+        sp.transfer(params_, sp.mutez(0), contractParams)
+        sp.emit(sp.record(event="TOKEN_TRANSFERED",transfered_by=sp.sender),tag="TOKEN_TRANSFERED")
     
     @sp.entry_point
     def add_moderator(self, _moderator):
@@ -87,6 +134,15 @@ class Marketplace(sp.Contract):
         sp.verify(self.data.offers.contains(offer_id), "INVALID_OFFER_ID")
         #TODO: Figureout how to send amount to owner and call transfer entrypoint
         sp.send(sp.sender, self.data.offers[offer_id].amount)
+        _params = [
+                Batch_transfer.item(from_=sp.sender,
+                                       txs=[
+                                           sp.record(to_=self.data.offers[offer_id].creator,
+                                                     amount=1,
+                                                     token_id=self.data.offers[offer_id].token.token_id)
+                                       ])
+            ]
+        self.transfer_token(self.data.offers[offer_id].token.address, _params)
         del self.data.offers[offer_id]
         sp.emit(sp.record(offer_id=offer_id),tag="OFFER_FULFILLED")
 
@@ -114,6 +170,15 @@ class Marketplace(sp.Contract):
         sp.verify(sp.amount == self.data.asks[ask_id].amount, "INVALID_AMOUNT")
         #TODO: Figureout how to send amount to owner and call transfer entrypoint
         sp.send(self.data.asks[ask_id].creator, sp.amount)
+        _params = [
+                Batch_transfer.item(from_=self.data.asks[ask_id].creator,
+                                       txs=[
+                                           sp.record(to_=sp.sender,
+                                                     amount=1,
+                                                     token_id=self.data.asks[ask_id].token.token_id)
+                                       ])
+            ]
+        self.transfer_token(self.data.asks[ask_id].token.address, _params)
         del self.data.asks[ask_id]
         sp.emit(sp.record(ask_id=ask_id),tag="ASK_FULFILLED")
 
