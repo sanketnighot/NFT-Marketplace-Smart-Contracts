@@ -88,7 +88,6 @@ class Marketplace(sp.Contract):
                     )
                 )
             .layout(("from_", "txs"))))
-        #TODO: Check weather the nft exists with sender
         contractParams = sp.contract(sp.TList(
                 sp.TRecord(
                     from_ = sp.TAddress, 
@@ -130,9 +129,7 @@ class Marketplace(sp.Contract):
     @sp.entry_point
     def fulfill_offer(self, offer_id):
         sp.set_type(offer_id, sp.TNat)
-        #TODO: Verify if sender is owner of the NFT
         sp.verify(self.data.offers.contains(offer_id), "INVALID_OFFER_ID")
-        #TODO: Figureout how to send amount to owner and call transfer entrypoint
         sp.send(sp.sender, self.data.offers[offer_id].amount)
         _params = [
                 Batch_transfer.item(from_=sp.sender,
@@ -168,7 +165,6 @@ class Marketplace(sp.Contract):
         sp.set_type(ask_id, sp.TNat)
         sp.verify(self.data.asks.contains(ask_id), "INVALID_ASK_ID")
         sp.verify(sp.amount == self.data.asks[ask_id].amount, "INVALID_AMOUNT")
-        #TODO: Figureout how to send amount to owner and call transfer entrypoint
         sp.send(self.data.asks[ask_id].creator, sp.amount)
         _params = [
                 Batch_transfer.item(from_=self.data.asks[ask_id].creator,
