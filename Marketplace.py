@@ -147,6 +147,9 @@ class Marketplace(sp.Contract):
             .layout(("from_", "txs"))), contract, entry_point="transfer").open_some()
         sp.transfer(params_, sp.mutez(0), contractParams)
     
+    def is_paused(self):
+        sp.verify(~self.data.pause, "CONTRACT_PAUSED")
+    
     @sp.entry_point
     def add_moderator(self, _moderator):
         sp.set_type(_moderator, sp.TAddress)
@@ -165,6 +168,7 @@ class Marketplace(sp.Contract):
     @sp.entry_point
     def offer(self, params):
         sp.set_type(params, Offer().type_value)
+        self.is_paused()
         sp.verify(sp.amount == params.amount, "INVALID_AMOUNT")
         self.data.offers[self.data.next_offer_id] = Offer().set_value(params)
         self.data.next_offer_id += 1
@@ -173,6 +177,7 @@ class Marketplace(sp.Contract):
     @sp.entry_point
     def fulfill_offer(self, offer_id):
         sp.set_type(offer_id, sp.TNat)
+        self.is_paused()
         sp.verify(self.data.offers.contains(offer_id), "INVALID_OFFER_ID")
         sp.send(sp.sender, self.data.offers[offer_id].amount)
         _params = [
@@ -190,6 +195,7 @@ class Marketplace(sp.Contract):
     @sp.entry_point
     def retract_offer(self, offer_id):
         sp.set_type(offer_id, sp.TNat)
+        self.is_paused()
         sp.verify(self.data.offers.contains(offer_id), "INVALID_OFFER_ID")
         sp.verify(self.data.offers[offer_id].creator == sp.sender, "INVALID_CREATOR")
         sp.send(sp.sender, self.data.offers[offer_id].amount)
@@ -199,7 +205,7 @@ class Marketplace(sp.Contract):
     @sp.entry_point
     def ask(self, params):
         sp.set_type(params, Ask().type_value)
-        #TODO: Verify if the sender is owner of nft
+        self.is_paused()
         self.data.asks[self.data.next_ask_id] = Ask().set_value(params)
         self.data.next_ask_id += 1
         sp.emit(sp.record(creator=params.creator,token=params.token),tag="ASK_CREATED")
@@ -207,6 +213,7 @@ class Marketplace(sp.Contract):
     @sp.entry_point
     def fulfill_ask(self, ask_id):
         sp.set_type(ask_id, sp.TNat)
+        self.is_paused()
         sp.verify(self.data.asks.contains(ask_id), "INVALID_ASK_ID")
         sp.verify(sp.amount == self.data.asks[ask_id].amount, "INVALID_AMOUNT")
         sp.send(self.data.asks[ask_id].creator, sp.amount)
@@ -227,6 +234,7 @@ class Marketplace(sp.Contract):
     @sp.entry_point
     def retract_ask(self, ask_id):
         sp.set_type(ask_id, sp.TNat)
+        self.is_paused()
         sp.verify(self.data.asks.contains(ask_id), "INVALID_ASK_ID")
         sp.verify(self.data.asks[ask_id].creator == sp.sender, "INVALID_CREATOR")
         del self.data.asks[ask_id]
@@ -244,10 +252,10 @@ def test():
     sc = sp.test_scenario()
     sc.h1("Quilt NFT Collection Marketplace")
     sc.table_of_contents()
-    admin = sp.address("tz1ADMINoooBkXqTzhz67QYVPJAU9Y2g48kq")
-    alice = sp.address("tz1ALICEoooBkXqTzhz67QYVPJAU9Y2g48kq")
+    admin = sp.address("tz1ADMINoooooXqTzhz67QYVPJAU9Y2g48kq")
+    alice = sp.address("tz1ALICEoooooXqTzhz67QYVPJAU9Y2g48kq")
     bob = sp.address("tz1BOBoooCkrBkXqTzhz67QYVPJAU9Y2g48kq")
-    elon = sp.address("tz1ELONooorBkXqTzhz67QYVPJAU9Y2g48kq")
+    elon = sp.address("tz1ELONooooooXqTzhz67QYVPJAU9Y2g48kq")
     mark = sp.address("tz1MARKoooBkXqTzhz67QYVPJAU9Y2g48kq")
     sc.show([admin, alice, bob, mark, elon])
     mp = Marketplace(admin)
