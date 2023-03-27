@@ -76,21 +76,18 @@ def test():
     fa2_2 = FA2_contract.FA2(config=environment_config(), metadata=metadata, admin=Addr.admin)
     mp = Marketplace.Marketplace(Addr.admin)
     au = Auction.Auction(Addr.admin)
-    sc.register(fa2_1)
-    sc.register(fa2_2)
-    sc.register(mp)
-    sc.register(au)
     
     sc.h1("Deploying Smart Contracts")
-    sc.p("✨ Smart Contracts compiled and originated in sandbox successfully [FA2 Contract, Marketplace Contract and Auctions Contract]")
-    sc.p("-------------------------------------------------------------------|")
-    sc.p("| Sr.| Contract Name        | Contract Address                     |")
-    sc.p("-------------------------------------------------------------------|")
-    sc.p("| 1. | FA2 Contract 1       | KT1TezoooozzSmartPyzzSTATiCzzzwwBFA1 |")
-    sc.p("| 2. | FA2 Contract 2       | KT1Tezooo1zzSmartPyzzSTATiCzzzyfC8eF |")
-    sc.p("| 3. | Marketplace Contract | KT1Tezooo2zzSmartPyzzSTATiCzzzwqqQ4H |")
-    sc.p("| 4. | Auctions Contract    | KT1Tezooo3zzSmartPyzzSTATiCzzzwqqQ4H |")
-    sc.p("|------------------------------------------------------------------|")
+    sc.p("✨ Smart Contracts compiled and originated in sandbox successfully ...")
+    sc.p("> FA2 Contract")
+    sc.register(fa2_1)
+    sc.register(fa2_2)
+    
+    sc.p("> Marketplace Contract")
+    sc.register(mp)
+    
+    sc.p("> Auctions Contract")
+    sc.register(au)
     
     sc.h1("FA2:- Mint tokens")
     fa2_1.mint(address=Addr.alice,
@@ -202,3 +199,35 @@ def test():
     
     
     sc.h1("Part 3:- Testing Auctions Smart Contract")
+    sc.h2("> Bob creates an Auction")
+    auc_data = sp.record(
+            creator = Addr.bob,
+            token = sp.record(
+                address = fa2_2.address,
+                token_id = sp.nat(0)
+                ),
+            start_time = sp.timestamp(0),
+            end_time = sp.timestamp(10),
+            price_increment = sp.tez(1),
+            current_price = sp.tez(0),
+            highest_bidder = Addr.bob
+        )
+    
+    sc.h3(">> FA2 Call: Bob makes Auction contract an Operator")
+    sc += fa2_2.update_operators([
+                sp.variant("add_operator", Operator_param().make(
+                    owner=Addr.bob,
+                    operator=au.address,
+                    token_id=0))]).run(sender=Addr.bob)
+    sc.h3(">> Auction Call: Bob Creates Auction")
+    sc += au.create_auction(auc_data).run(sender = Addr.bob)
+    
+    sc.h2(">Bids get submitted")
+    sc += au.bid(0).run(sender = Addr.elon, amount=sp.tez(1))
+    sc += au.bid(0).run(sender = Addr.bob, amount=sp.tez(2))
+    sc += au.bid(0).run(sender = Addr.mark, amount=sp.tez(3))
+    sc += au.bid(0).run(sender = Addr.elon, amount=sp.tez(3), valid=False)
+    sc += au.bid(0).run(sender = Addr.admin, amount=sp.tez(5))
+    
+    sc.h2("> Bob ends Auction")
+    sc += au.settle_auction(sp.nat(0)).run(sender = Addr.bob)
