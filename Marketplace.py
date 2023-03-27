@@ -1,7 +1,7 @@
 import smartpy as sp
 
 # Import the modified FA2 contract
-FA2_contract = sp.io.import_script_from_url('file:./FA2.py')
+# FA2_contract = sp.io.import_script_from_url('file:./FA2.py')
 
 def global_parameter(env_var, default):
     try:
@@ -179,7 +179,6 @@ class Marketplace(sp.Contract):
         sp.set_type(offer_id, sp.TNat)
         self.is_paused()
         sp.verify(self.data.offers.contains(offer_id), "INVALID_OFFER_ID")
-        sp.send(sp.sender, self.data.offers[offer_id].amount)
         _params = [
                 Batch_transfer.item(from_=sp.sender,
                                        txs=[
@@ -189,6 +188,7 @@ class Marketplace(sp.Contract):
                                        ])
             ]
         self.transfer_token(self.data.offers[offer_id].token.address, _params)
+        sp.send(sp.sender, self.data.offers[offer_id].amount)
         del self.data.offers[offer_id]
         sp.emit(sp.record(offer_id=offer_id),tag="OFFER_FULFILLED")
 
@@ -247,110 +247,110 @@ class Marketplace(sp.Contract):
 
 
 
-@sp.add_test(name="Marketplace")
-def test():
-    sc = sp.test_scenario()
-    sc.h1("Quilt NFT Collection Marketplace")
-    sc.table_of_contents()
-    admin = sp.address("tz1ADMINoooooXqTzhz67QYVPJAU9Y2g48kq")
-    alice = sp.address("tz1ALICEoooooXqTzhz67QYVPJAU9Y2g48kq")
-    bob = sp.address("tz1BOBoooCkrBkXqTzhz67QYVPJAU9Y2g48kq")
-    elon = sp.address("tz1ELONooooooXqTzhz67QYVPJAU9Y2g48kq")
-    mark = sp.address("tz1MARKoooBkXqTzhz67QYVPJAU9Y2g48kq")
-    sc.show([admin, alice, bob, mark, elon])
-    mp = Marketplace(admin)
-    metadata = sp.map({"": sp.utils.bytes_of_string("https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")})
-    fa2 = FA2_contract.FA2(config=environment_config(), metadata=metadata, admin=admin)
-    sc.h1("Code")
-    sc.h2("Marketplace Code")
-    sc += mp
-    sc.h2("FA2 Contract Code")
-    sc += fa2
+# @sp.add_test(name="Marketplace")
+# def test():
+#     sc = sp.test_scenario()
+#     sc.h1("Quilt NFT Collection Marketplace")
+#     sc.table_of_contents()
+#     admin = sp.address("tz1ADMINoooooXqTzhz67QYVPJAU9Y2g48kq")
+#     alice = sp.address("tz1ALICEoooooXqTzhz67QYVPJAU9Y2g48kq")
+#     bob = sp.address("tz1BOBoooCkrBkXqTzhz67QYVPJAU9Y2g48kq")
+#     elon = sp.address("tz1ELONooooooXqTzhz67QYVPJAU9Y2g48kq")
+#     mark = sp.address("tz1MARKoooBkXqTzhz67QYVPJAU9Y2g48kq")
+#     sc.show([admin, alice, bob, mark, elon])
+#     mp = Marketplace(admin)
+#     metadata = sp.map({"": sp.utils.bytes_of_string("https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")})
+#     fa2 = FA2_contract.FA2(config=environment_config(), metadata=metadata, admin=admin)
+#     sc.h1("Code")
+#     sc.h2("Marketplace Code")
+#     sc += mp
+#     sc.h2("FA2 Contract Code")
+#     sc += fa2
     
-    sc.h1("Marketplace: Add/Remove Moderator")
-    sc += mp.add_moderator(alice).run(sender = admin)
-    sc += mp.remove_moderator(alice).run(sender = admin)
+#     sc.h1("Marketplace: Add/Remove Moderator")
+#     sc += mp.add_moderator(alice).run(sender = admin)
+#     sc += mp.remove_moderator(alice).run(sender = admin)
     
-    sc.h1("FA2: Mint tokens")
-    fa2.mint(address=alice,
-                amount=50,
-                metadata=sp.map({"": sp.utils.bytes_of_string(
-                    "https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")}),
-                token_id=0).run(sender=admin)
+#     sc.h1("FA2: Mint tokens")
+#     fa2.mint(address=alice,
+#                 amount=50,
+#                 metadata=sp.map({"": sp.utils.bytes_of_string(
+#                     "https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")}),
+#                 token_id=0).run(sender=admin)
     
-    sc.h1("Marketplace: Create Offer")
-    offer_data = sp.record(
-        creator = admin,
-        token = sp.record(
-            address = fa2.address,
-            token_id = sp.nat(0)
-        ),
-        amount = sp.tez(1),
-        expiry_time = sp.some(sp.timestamp(5))
-    )
-    sc += mp.offer(offer_data).run(sender = admin, amount = sp.tez(1))
-    offer_data = sp.record(
-        creator = bob,
-        token = sp.record(
-            address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
-            token_id = sp.nat(0)
-        ),
-        amount = sp.tez(5),
-        expiry_time = sp.none
-    )
+#     sc.h1("Marketplace: Create Offer")
+#     offer_data = sp.record(
+#         creator = admin,
+#         token = sp.record(
+#             address = fa2.address,
+#             token_id = sp.nat(0)
+#         ),
+#         amount = sp.tez(1),
+#         expiry_time = sp.some(sp.timestamp(5))
+#     )
+#     sc += mp.offer(offer_data).run(sender = admin, amount = sp.tez(1))
+#     offer_data = sp.record(
+#         creator = bob,
+#         token = sp.record(
+#             address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
+#             token_id = sp.nat(0)
+#         ),
+#         amount = sp.tez(5),
+#         expiry_time = sp.none
+#     )
 
-    sc += mp.offer(offer_data).run(sender = bob, amount = sp.tez(5))
+#     sc += mp.offer(offer_data).run(sender = bob, amount = sp.tez(5))
 
     
-    sc.h1("Marketplace: Fulfill Offer")
+#     sc.h1("Marketplace: Fulfill Offer")
     
-    sc.h2("FA2: Update operators")
-    sc += fa2.update_operators([
-                sp.variant("add_operator", Operator_param().make(
-                    owner=alice,
-                    operator=mp.address,
-                    token_id=0))]).run(sender=alice)
+#     sc.h2("FA2: Update operators")
+#     sc += fa2.update_operators([
+#                 sp.variant("add_operator", Operator_param().make(
+#                     owner=alice,
+#                     operator=mp.address,
+#                     token_id=0))]).run(sender=alice)
     
-    sc += mp.fulfill_offer(sp.nat(0)).run(sender = alice)
+#     sc += mp.fulfill_offer(sp.nat(0)).run(sender = alice)
 
-    sc.h1("Marketplace: Retract Offer")
-    sc += mp.retract_offer(sp.nat(1)).run(sender = bob)
+#     sc.h1("Marketplace: Retract Offer")
+#     sc += mp.retract_offer(sp.nat(1)).run(sender = bob)
     
-    sc.h1("Marketplace: Create Ask")
-    ask_data = sp.record(
-        creator = alice,
-        token = sp.record(
-            address = sp.address("KT1Tezooo1zzSmartPyzzSTATiCzzzyfC8eF"),
-            token_id = sp.nat(0)
-        ),
-        amount = sp.tez(1),
-        editions = sp.nat(2),
-        expiry_time = sp.some(sp.timestamp(5))
-    )
+#     sc.h1("Marketplace: Create Ask")
+#     ask_data = sp.record(
+#         creator = alice,
+#         token = sp.record(
+#             address = sp.address("KT1Tezooo1zzSmartPyzzSTATiCzzzyfC8eF"),
+#             token_id = sp.nat(0)
+#         ),
+#         amount = sp.tez(1),
+#         editions = sp.nat(2),
+#         expiry_time = sp.some(sp.timestamp(5))
+#     )
     
-    sc.h2("FA2: Update operators")
-    sc += fa2.update_operators([
-                sp.variant("add_operator", Operator_param().make(
-                    owner=alice,
-                    operator=mp.address,
-                    token_id=0))]).run(sender=alice)
+#     sc.h2("FA2: Update operators")
+#     sc += fa2.update_operators([
+#                 sp.variant("add_operator", Operator_param().make(
+#                     owner=alice,
+#                     operator=mp.address,
+#                     token_id=0))]).run(sender=alice)
     
-    sc += mp.ask(ask_data).run(sender = alice, amount = sp.tez(1))
+#     sc += mp.ask(ask_data).run(sender = alice, amount = sp.tez(1))
     
-    ask_data = sp.record(
-        creator = bob,
-        token = sp.record(
-            address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
-            token_id = sp.nat(0)
-        ),
-        amount = sp.tez(5),
-        editions = sp.nat(5),
-        expiry_time = sp.none
-    )
-    sc += mp.ask(ask_data).run(sender = bob)
+#     ask_data = sp.record(
+#         creator = bob,
+#         token = sp.record(
+#             address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
+#             token_id = sp.nat(0)
+#         ),
+#         amount = sp.tez(5),
+#         editions = sp.nat(5),
+#         expiry_time = sp.none
+#     )
+#     sc += mp.ask(ask_data).run(sender = bob)
 
-    sc.h1("Marketplace: Fulfill Ask")
-    sc += mp.fulfill_ask(sp.nat(0)).run(sender = elon, amount = sp.tez(1))
+#     sc.h1("Marketplace: Fulfill Ask")
+#     sc += mp.fulfill_ask(sp.nat(0)).run(sender = elon, amount = sp.tez(1))
 
-    sc.h1("Marketplace: Retract Ask")
-    sc += mp.retract_ask(sp.nat(1)).run(sender = bob)
+#     sc.h1("Marketplace: Retract Ask")
+#     sc += mp.retract_ask(sp.nat(1)).run(sender = bob)

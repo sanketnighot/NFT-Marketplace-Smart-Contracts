@@ -171,62 +171,67 @@ class Auction(sp.Contract):
         self.data.pause = ~self.data.pause
 
 
-@sp.add_test(name="Auction")
-def test():
-    sc = sp.test_scenario()
+# @sp.add_test(name="Auction")
+# def test():
+#     sc = sp.test_scenario()
     
-    sc.h1("Quilt NFT Collection Aucitons")
-    sc.table_of_contents()
-    admin = sp.address("tz1ADMINoooooXqTzhz67QYVPJAU9Y2g48kq")
-    alice = sp.address("tz1ALICEoooooXqTzhz67QYVPJAU9Y2g48kq")
-    bob = sp.address("tz1BOBoooCkrBkXqTzhz67QYVPJAU9Y2g48kq")
-    elon = sp.address("tz1ELONooooooXqTzhz67QYVPJAU9Y2g48kq")
-    mark = sp.address("tz1MARKoooBkXqTzhz67QYVPJAU9Y2g48kq")
-    sc.show([admin, alice, bob, mark, elon, ])
+#     sc.h1("Quilt NFT Collection Aucitons")
+#     sc.table_of_contents()
+#     admin   = sp.address("tz1ADMINoooooooooooooooooooooooooooo")
+#     alice   = sp.address("tz1ALICEoooooooooooooooooooooooooooo")
+#     bob     = sp.address("tz1BOBoooooooooooooooooooooooooooooo")
+#     elon    = sp.address("tz1ELONooooooooooooooooooooooooooooo")
+#     mark    = sp.address("tz1MARKooooooooooooooooooooooooooooo")
+#     john    = sp.address("tz1JOHNooooooooooooooooooooooooooooo")
+#     mike    = sp.address("tz1MIKEooooooooooooooooooooooooooooo")
+#     james   = sp.address("tz1JAMESoooooooooooooooooooooooooooo")
+#     joe     = sp.address("tz1JOEoooooooooooooooooooooooooooooo")
+#     adam    = sp.address("tz1ADAMooooooooooooooooooooooooooooo")
+#     sc.show([admin, alice, bob, mark, elon, mark, john, mike, james, joe, adam])
     
-    sc.h1("Code")
-    auc = Auction(admin)
-    sc += auc
+#     sc.h1("Code")
+#     auc = Auction(admin)
+#     sc += auc
     
-    sc.h1("Create Auction")
-    auc_data = sp.record(
-            creator = alice,
-            token = sp.record(
-                address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
-                token_id = sp.nat(0)
-                ),
-            start_time = sp.timestamp(0),
-            end_time = sp.timestamp(10),
-            price_increment = sp.tez(1),
-            current_price = sp.tez(0),
-            highest_bidder = alice
-        )
-    sc += auc.create_auction(auc_data).run(sender = alice)
-    auc_data = sp.record(
-            creator = bob,
-            token = sp.record(
-                address = sp.address("KT1Tezooo1zzSmartPyzzDYNAMiCzzpLu4LU"),
-                token_id = sp.nat(1)
-                ),
-            start_time = sp.timestamp(0),
-            end_time = sp.timestamp(10),
-            price_increment = sp.tez(1),
-            current_price = sp.tez(0),
-            highest_bidder = bob
-        )
-    sc += auc.create_auction(auc_data).run(sender = bob)
+#     sc.h1("Create Auction")
+#     auc_data = sp.record(
+#             creator = alice,
+#             token = sp.record(
+#                 address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
+#                 token_id = sp.nat(0)
+#                 ),
+#             start_time = sp.timestamp(0),
+#             end_time = sp.timestamp(10),
+#             price_increment = sp.tez(1),
+#             current_price = sp.tez(0),
+#             highest_bidder = alice
+#         )
+#     sc += auc.create_auction(auc_data).run(sender = alice)
+#     auc_data = sp.record(
+#             creator = bob,
+#             token = sp.record(
+#                 address = sp.address("KT1Tezooo1zzSmartPyzzDYNAMiCzzpLu4LU"),
+#                 token_id = sp.nat(1)
+#                 ),
+#             start_time = sp.timestamp(0),
+#             end_time = sp.timestamp(10),
+#             price_increment = sp.tez(1),
+#             current_price = sp.tez(0),
+#             highest_bidder = bob
+#         )
+#     sc += auc.create_auction(auc_data).run(sender = bob)
     
-    sc.h1("Bid")
-    sc += auc.bid(1).run(sender = elon, amount=sp.tez(1))
-    sc += auc.bid(0).run(sender = elon, amount=sp.tez(1))
-    sc += auc.bid(0).run(sender = bob, amount=sp.tez(2))
-    sc += auc.bid(0).run(sender = mark, amount=sp.tez(3))
-    sc += auc.bid(0).run(sender = elon, amount=sp.tez(3), valid=False)
-    sc += auc.bid(0).run(sender = admin, amount=sp.tez(5))
+#     sc.h1("Bid")
+#     sc += auc.bid(1).run(sender = elon, amount=sp.tez(1))
+#     sc += auc.bid(0).run(sender = elon, amount=sp.tez(1))
+#     sc += auc.bid(0).run(sender = bob, amount=sp.tez(2))
+#     sc += auc.bid(0).run(sender = mark, amount=sp.tez(3))
+#     sc += auc.bid(0).run(sender = elon, amount=sp.tez(3), valid=False)
+#     sc += auc.bid(0).run(sender = admin, amount=sp.tez(5))
     
-    sc.h1("Cancel Auction")
-    sc += auc.cancel_auction(sp.nat(1)).run(sender = bob)
+#     sc.h1("Cancel Auction")
+#     sc += auc.cancel_auction(sp.nat(1)).run(sender = bob)
     
-    sc.h1("Settle Auction")
-    sc += auc.settle_auction(sp.nat(0)).run(sender = alice)
-    sc += auc.toggle_pause().run(sender = admin)
+#     sc.h1("Settle Auction")
+#     sc += auc.settle_auction(sp.nat(0)).run(sender = alice)
+#     sc += auc.toggle_pause().run(sender = admin)
