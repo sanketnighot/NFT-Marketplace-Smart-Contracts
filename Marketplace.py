@@ -1,7 +1,7 @@
 import smartpy as sp
 
 # Import the modified FA2 contract
-# FA2_contract = sp.io.import_script_from_url('file:./FA2.py')
+FA2_contract = sp.io.import_script_from_url('file:./FA2.py')
 
 def global_parameter(env_var, default):
     try:
@@ -43,7 +43,19 @@ class Operator_param:
                       operator=operator,
                       token_id=token_id)
         return sp.set_type_expr(r, self.get_type())
-    
+
+class Share:
+    def get_type(self):
+        t = sp.TRecord(
+            recipient=sp.TAddress,
+            amount=sp.TNat)
+
+    def make(self, recipient, amount):
+        r = sp.record(
+            recipient=recipient,
+            amount=amount)
+        return sp.set_type_expr(r, self.get_type())
+
 class Ask:
     def __init__(self):
         self.type_value = sp.TRecord(
@@ -54,7 +66,8 @@ class Ask:
             ),
             amount = sp.TMutez,
             editions = sp.TNat,
-            expiry_time = sp.TOption(sp.TTimestamp)
+            expiry_time = sp.TOption(sp.TTimestamp),
+            shares = sp.TList(Share().get_type())
         )
 
     def set_type(self): return sp.big_map(l = {}, tkey = sp.TNat, tvalue = self.type_value)
@@ -65,7 +78,8 @@ class Ask:
             token = _params.token,
             amount = _params.amount,
             editions = _params.editions,
-            expiry_time = _params.expiry_time
+            expiry_time = _params.expiry_time,
+            shares = _params.shares
         )
     
 class Offer:
@@ -77,7 +91,8 @@ class Offer:
                 token_id = sp.TNat
             ),
             amount = sp.TMutez,
-            expiry_time = sp.TOption(sp.TTimestamp)
+            expiry_time = sp.TOption(sp.TTimestamp),
+            shares = sp.TList(Share().get_type())
         )
     
     def set_type(self): return sp.big_map(l = {}, tkey = sp.TNat, tvalue = self.type_value)
@@ -87,7 +102,8 @@ class Offer:
             creator = _params.creator,
             token = _params.token,
             amount = _params.amount,
-            expiry_time = _params.expiry_time
+            expiry_time = _params.expiry_time,
+            shares = _params.shares
         )
 
 class Batch_transfer:
@@ -108,14 +124,16 @@ class Batch_transfer:
         return sp.set_type_expr(v, Batch_transfer.get_transfer_type())
     
 class Marketplace(sp.Contract):
-    def __init__(self, _mod):
+    def __init__(self, mods, fund_operator):
         self.init(
             # metadata = metadata,
-            mods = sp.set([_mod]),
+            mods = sp.set(mods),
+            fund_operator = fund_operator,
             next_ask_id = sp.nat(0),
             asks = Ask().set_type(),
             next_offer_id = sp.nat(0),
             offers = Offer().set_type(),
+            platform_fees = sp.nat(20000),
             pause = sp.bool(False)
         )
 
@@ -164,16 +182,28 @@ class Marketplace(sp.Contract):
         sp.verify(self.data.mods.contains(_moderator), "ADDRESS_NAT_MODERATOR")
         self.data.mods.remove(_moderator)
         sp.emit(sp.record(moderator=_moderator),tag="MODERATOR_REMOVED")
+    
+    @sp.entry_point
+    def update_platform_fees(self, platform_fees):
+        sp.set_type(platform_fees, sp.TNat)
+        sp.verify(self.data.mods.contains(sp.sender), "NOT_MODERATOR")
+        sp.verify(platform_fees < 1000000, "INVALID_SHARES")
+        self.data.platform_fees = platform_fees
+        sp.emit(sp.record(platform_fees=platform_fees),tag="UPDATE_PLATFORM_FEES")
         
     @sp.entry_point
     def offer(self, params):
         sp.set_type(params, Offer().type_value)
         self.is_paused()
         sp.verify(sp.amount == params.amount, "INVALID_AMOUNT")
+        total_shares = sp.local("total_shares", self.data.platform_fees)
+        sp.for txn in params.shares:
+            total_shares.value += txn.amount
+        sp.verify(total_shares.value < 1000000, "INVALID_SHARES")
         self.data.offers[self.data.next_offer_id] = Offer().set_value(params)
         self.data.next_offer_id += 1
         sp.emit(sp.record(creator=params.creator,token=params.token),tag="OFFER_CREATED")
-    
+
     @sp.entry_point
     def fulfill_offer(self, offer_id):
         sp.set_type(offer_id, sp.TNat)
@@ -188,7 +218,13 @@ class Marketplace(sp.Contract):
                                        ])
             ]
         self.transfer_token(self.data.offers[offer_id].token.address, _params)
-        sp.send(sp.sender, self.data.offers[offer_id].amount)
+        transfer_amount = sp.local("transfer_amount", self.data.offers[offer_id].amount)
+        sp.send(self.data.fund_operator, sp.split_tokens(transfer_amount.value, self.data.platform_fees, 1000000))
+        transfer_amount.value = transfer_amount.value - sp.split_tokens(transfer_amount.value, self.data.platform_fees, 1000000)
+        sp.for txn in self.data.offers[offer_id].shares:
+            sp.send(txn.recipient, sp.split_tokens(transfer_amount.value, txn.amount, 1000000))
+            transfer_amount.value = transfer_amount.value - sp.split_tokens(transfer_amount.value, txn.amount, 1000000)
+        sp.send(sp.sender, transfer_amount.value)
         del self.data.offers[offer_id]
         sp.emit(sp.record(offer_id=offer_id),tag="OFFER_FULFILLED")
 
@@ -206,6 +242,10 @@ class Marketplace(sp.Contract):
     def ask(self, params):
         sp.set_type(params, Ask().type_value)
         self.is_paused()
+        total_shares = sp.local("total_shares", self.data.platform_fees)
+        sp.for txn in params.shares:
+            total_shares.value += txn.amount
+        sp.verify(total_shares.value < 1000000, "INVALID_SHARES")
         self.data.asks[self.data.next_ask_id] = Ask().set_value(params)
         self.data.next_ask_id += 1
         sp.emit(sp.record(creator=params.creator,token=params.token),tag="ASK_CREATED")
@@ -216,7 +256,13 @@ class Marketplace(sp.Contract):
         self.is_paused()
         sp.verify(self.data.asks.contains(ask_id), "INVALID_ASK_ID")
         sp.verify(sp.amount == self.data.asks[ask_id].amount, "INVALID_AMOUNT")
-        sp.send(self.data.asks[ask_id].creator, sp.amount)
+        transfer_amount = sp.local("transfer_amount", sp.amount)
+        sp.send(self.data.fund_operator, sp.split_tokens(transfer_amount.value, self.data.platform_fees, 1000000))
+        transfer_amount.value = transfer_amount.value - sp.split_tokens(transfer_amount.value, self.data.platform_fees, 1000000)
+        sp.for txn in self.data.asks[ask_id].shares:
+            sp.send(txn.recipient, sp.split_tokens(transfer_amount.value, txn.amount, 1000000))
+            transfer_amount.value = transfer_amount.value - sp.split_tokens(transfer_amount.value, txn.amount, 1000000)
+        sp.send(self.data.asks[ask_id].creator, transfer_amount.value)
         _params = [
                 Batch_transfer.item(from_=self.data.asks[ask_id].creator,
                                        txs=[
@@ -247,110 +293,122 @@ class Marketplace(sp.Contract):
 
 
 
-# @sp.add_test(name="Marketplace")
-# def test():
-#     sc = sp.test_scenario()
-#     sc.h1("Quilt NFT Collection Marketplace")
-#     sc.table_of_contents()
-#     admin = sp.address("tz1ADMINoooooXqTzhz67QYVPJAU9Y2g48kq")
-#     alice = sp.address("tz1ALICEoooooXqTzhz67QYVPJAU9Y2g48kq")
-#     bob = sp.address("tz1BOBoooCkrBkXqTzhz67QYVPJAU9Y2g48kq")
-#     elon = sp.address("tz1ELONooooooXqTzhz67QYVPJAU9Y2g48kq")
-#     mark = sp.address("tz1MARKoooBkXqTzhz67QYVPJAU9Y2g48kq")
-#     sc.show([admin, alice, bob, mark, elon])
-#     mp = Marketplace(admin)
-#     metadata = sp.map({"": sp.utils.bytes_of_string("https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")})
-#     fa2 = FA2_contract.FA2(config=environment_config(), metadata=metadata, admin=admin)
-#     sc.h1("Code")
-#     sc.h2("Marketplace Code")
-#     sc += mp
-#     sc.h2("FA2 Contract Code")
-#     sc += fa2
+@sp.add_test(name="Marketplace")
+def test():
+    sc = sp.test_scenario()
+    sc.h1("Quilt NFT Collection Marketplace")
+    sc.table_of_contents()
+    admin           =   sp.address("tz1ooADMIN")
+    alice           =   sp.address("tz1ooALICE")
+    bob             =   sp.address("tz1ooBOB")
+    elon            =   sp.address("tz1ooELON")
+    mark            =   sp.address("tz1ooMARK")
+    fund_operator   =   sp.address("tz1ooFUNDoOP")
     
-#     sc.h1("Marketplace: Add/Remove Moderator")
-#     sc += mp.add_moderator(alice).run(sender = admin)
-#     sc += mp.remove_moderator(alice).run(sender = admin)
-    
-#     sc.h1("FA2: Mint tokens")
-#     fa2.mint(address=alice,
-#                 amount=50,
-#                 metadata=sp.map({"": sp.utils.bytes_of_string(
-#                     "https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")}),
-#                 token_id=0).run(sender=admin)
-    
-#     sc.h1("Marketplace: Create Offer")
-#     offer_data = sp.record(
-#         creator = admin,
-#         token = sp.record(
-#             address = fa2.address,
-#             token_id = sp.nat(0)
-#         ),
-#         amount = sp.tez(1),
-#         expiry_time = sp.some(sp.timestamp(5))
-#     )
-#     sc += mp.offer(offer_data).run(sender = admin, amount = sp.tez(1))
-#     offer_data = sp.record(
-#         creator = bob,
-#         token = sp.record(
-#             address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
-#             token_id = sp.nat(0)
-#         ),
-#         amount = sp.tez(5),
-#         expiry_time = sp.none
-#     )
+    sc.show([admin, alice, bob, mark, elon, fund_operator])
+    get_share = Share()
 
-#     sc += mp.offer(offer_data).run(sender = bob, amount = sp.tez(5))
+    mp = Marketplace(mods = [admin], fund_operator = fund_operator)
+    metadata = sp.map({"": sp.utils.bytes_of_string("https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")})
+    fa2 = FA2_contract.FA2(config=environment_config(), metadata=metadata, admin=admin)
+    sc.h1("Code")
+    sc.h2("Marketplace Code")
+    sc += mp
+    sc.h2("FA2 Contract Code")
+    sc += fa2
+    
+    sc.h1("Marketplace: Add/Remove Moderator")
+    sc += mp.add_moderator(alice).run(sender = admin)
+    sc += mp.remove_moderator(alice).run(sender = admin)
+    
+    sc.h1("FA2: Mint tokens")
+    fa2.mint(address=alice,
+                amount=50,
+                metadata=sp.map({"": sp.utils.bytes_of_string(
+                    "https://ipfs.io/ipfs/bafyreias7kz2ryktu34afqwh56pltm32uxsecaxsootklwlsquw5gn3ptq/metadata.json/")}),
+                token_id=0).run(sender=admin)
+    
+    sc.h1("Marketplace: Create Offer")
+    offer_data = sp.record(
+        creator = admin,
+        token = sp.record(
+            address = fa2.address,
+            token_id = sp.nat(0)
+        ),
+        amount = sp.tez(1),
+        expiry_time = sp.some(sp.timestamp(5)),
+        shares = [get_share.make(recipient= admin, amount=sp.nat(400))]
+    )
+    sc += mp.offer(offer_data).run(sender = admin, amount = sp.tez(1))
+    offer_data = sp.record(
+        creator = bob,
+        token = sp.record(
+            address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
+            token_id = sp.nat(0)
+        ),
+        amount = sp.tez(5),
+        expiry_time = sp.none,
+        shares = [get_share.make(recipient= admin, amount=sp.nat(400))]
+    )
+
+    sc += mp.offer(offer_data).run(sender = bob, amount = sp.tez(5))
 
     
-#     sc.h1("Marketplace: Fulfill Offer")
+    sc.h1("Marketplace: Fulfill Offer")
     
-#     sc.h2("FA2: Update operators")
-#     sc += fa2.update_operators([
-#                 sp.variant("add_operator", Operator_param().make(
-#                     owner=alice,
-#                     operator=mp.address,
-#                     token_id=0))]).run(sender=alice)
+    sc.h2("FA2: Update operators")
+    sc += fa2.update_operators([
+                sp.variant("add_operator", Operator_param().make(
+                    owner=alice,
+                    operator=mp.address,
+                    token_id=0))]).run(sender=alice)
     
-#     sc += mp.fulfill_offer(sp.nat(0)).run(sender = alice)
+    sc += mp.fulfill_offer(sp.nat(0)).run(sender = alice)
 
-#     sc.h1("Marketplace: Retract Offer")
-#     sc += mp.retract_offer(sp.nat(1)).run(sender = bob)
+    sc.h1("Marketplace: Retract Offer")
+    sc += mp.retract_offer(sp.nat(1)).run(sender = bob)
+    sc.show(mp.balance)
     
-#     sc.h1("Marketplace: Create Ask")
-#     ask_data = sp.record(
-#         creator = alice,
-#         token = sp.record(
-#             address = sp.address("KT1Tezooo1zzSmartPyzzSTATiCzzzyfC8eF"),
-#             token_id = sp.nat(0)
-#         ),
-#         amount = sp.tez(1),
-#         editions = sp.nat(2),
-#         expiry_time = sp.some(sp.timestamp(5))
-#     )
+    sc.h1("Marketplace: Create Ask")
+    ask_data = sp.record(
+        creator = alice,
+        token = sp.record(
+            address = sp.address("KT1Tezooo1zzSmartPyzzSTATiCzzzyfC8eF"),
+            token_id = sp.nat(0)
+        ),
+        amount = sp.tez(100),
+        editions = sp.nat(2),
+        expiry_time = sp.some(sp.timestamp(5)),
+        shares = [get_share.make(recipient= admin, amount=sp.nat(40000)),
+                  get_share.make(recipient= mark, amount=sp.nat(5000)),
+                  get_share.make(recipient= mark, amount=sp.nat(5000)),
+                  get_share.make(recipient= mark, amount=sp.nat(50000)),
+                  get_share.make(recipient= bob, amount=sp.nat(5000))]
+    )
     
-#     sc.h2("FA2: Update operators")
-#     sc += fa2.update_operators([
-#                 sp.variant("add_operator", Operator_param().make(
-#                     owner=alice,
-#                     operator=mp.address,
-#                     token_id=0))]).run(sender=alice)
+    sc.h2("FA2: Update operators")
+    sc += fa2.update_operators([
+                sp.variant("add_operator", Operator_param().make(
+                    owner=alice,
+                    operator=mp.address,
+                    token_id=0))]).run(sender=alice)
     
-#     sc += mp.ask(ask_data).run(sender = alice, amount = sp.tez(1))
-    
-#     ask_data = sp.record(
-#         creator = bob,
-#         token = sp.record(
-#             address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
-#             token_id = sp.nat(0)
-#         ),
-#         amount = sp.tez(5),
-#         editions = sp.nat(5),
-#         expiry_time = sp.none
-#     )
-#     sc += mp.ask(ask_data).run(sender = bob)
+    sc += mp.ask(ask_data).run(sender = alice)
 
-#     sc.h1("Marketplace: Fulfill Ask")
-#     sc += mp.fulfill_ask(sp.nat(0)).run(sender = elon, amount = sp.tez(1))
+    ask_data = sp.record(
+        creator = bob,
+        token = sp.record(
+            address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
+            token_id = sp.nat(0)
+        ),
+        amount = sp.tez(5),
+        editions = sp.nat(5),
+        expiry_time = sp.none,
+        shares = [get_share.make(recipient= admin, amount=sp.nat(100000))]
+    )
+    sc += mp.ask(ask_data).run(sender = bob)
+    sc.h1("Marketplace: Fulfill Ask")
+    sc += mp.fulfill_ask(sp.nat(0)).run(sender = elon, amount = sp.tez(100))
 
-#     sc.h1("Marketplace: Retract Ask")
-#     sc += mp.retract_ask(sp.nat(1)).run(sender = bob)
+    sc.h1("Marketplace: Retract Ask")
+    sc += mp.retract_ask(sp.nat(1)).run(sender = bob)

@@ -231,3 +231,10 @@ def test():
     
     sc.h2("> Bob ends Auction")
     sc += au.settle_auction(sp.nat(0)).run(sender = Addr.bob)
+
+
+@sp.add_test(name="Mutation1")
+def test():
+    s = sp.test_scenario()
+    with s.mutation_test() as mt:
+        mt.add_scenario("Test", contract_id=2)

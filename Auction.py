@@ -1,5 +1,17 @@
 import smartpy as sp
 
+class Share:
+    def get_type(self):
+        t = sp.TRecord(
+            recipient=sp.TAddress,
+            amount=sp.TNat)
+
+    def make(self, recipient, amount):
+        r = sp.record(
+            recipient=recipient,
+            amount=amount)
+        return sp.set_type_expr(r, self.get_type())
+
 class AuctionData:
     def __init__(self):
         self.type_value = sp.TRecord(
@@ -12,7 +24,8 @@ class AuctionData:
             end_time = sp.TTimestamp,
             price_increment = sp.TMutez,
             current_price = sp.TMutez,
-            highest_bidder = sp.TAddress
+            highest_bidder = sp.TAddress,
+            shares = Share().get_type()
         )
     
     def get_type(self): return self.type_value
@@ -27,7 +40,8 @@ class AuctionData:
             end_time = _params.end_time,
             price_increment = _params.price_increment,
             current_price = _params.current_price,
-            highest_bidder = _params.highest_bidder
+            highest_bidder = _params.highest_bidder,
+            shares = _params.shares
         )
 
 class Batch_transfer:
@@ -47,12 +61,16 @@ class Batch_transfer:
         v = sp.record(from_=from_, txs=txs)
         return sp.set_type_expr(v, Batch_transfer.get_transfer_type())
 
+
 class Auction(sp.Contract):
-    def __init__(self, _mod):
+    def __init__(self, mods, fund_operator):
         self.init(
-            mods = sp.set([_mod]),
+            # metadata = metadata,
+            mods = sp.set(mods),
+            fund_operator = fund_operator,
             next_auction_id = sp.nat(0),
             auctions = AuctionData().set_type(),
+            platform_fees = sp.nat(20000),
             pause = sp.bool(False)
         )
         
@@ -98,11 +116,23 @@ class Auction(sp.Contract):
         sp.verify(self.data.mods.contains(_moderator), "ADDRESS_NAT_MODERATOR")
         self.data.mods.remove(_moderator)
         sp.emit(sp.record(moderator=_moderator),tag="MODERATOR_REMOVED")
+    
+    @sp.entry_point
+    def update_platform_fees(self, platform_fees):
+        sp.set_type(platform_fees, sp.TNat)
+        sp.verify(self.data.mods.contains(sp.sender), "NOT_MODERATOR")
+        sp.verify(platform_fees < 1000000, "INVALID_SHARES")
+        self.data.platform_fees = platform_fees
+        sp.emit(sp.record(platform_fees=platform_fees),tag="UPDATE_PLATFORM_FEES")
         
     @sp.entry_point
     def create_auction(self, _params):
         sp.set_type(_params, AuctionData().get_type())
         sp.verify(_params.creator == sp.sender, "INVALID_CREATOR")
+        total_shares = sp.local("total_shares", self.data.platform_fees)
+        sp.for txn in _params.shares:
+            total_shares.value += txn.amount
+        sp.verify(total_shares.value < 1000000, "INVALID_SHARES")
         self.data.auctions[self.data.next_auction_id] = AuctionData().set_value(_params)
         self.data.next_auction_id += sp.nat(1)
         params = [
@@ -161,7 +191,13 @@ class Auction(sp.Contract):
                                        ])
             ]
         self.transfer_token(self.data.auctions[auction_id].token.address, _params)
-        sp.send(self.data.auctions[auction_id].creator, self.data.auctions[auction_id].current_price)
+        transfer_amount = sp.local("transfer_amount", self.data.auctions[auction_id].current_price)
+        sp.send(self.data.fund_operator, sp.split_tokens(transfer_amount.value, self.data.platform_fees, 1000000))
+        transfer_amount.value = transfer_amount.value - sp.split_tokens(transfer_amount.value, self.data.platform_fees, 1000000)
+        sp.for txn in self.data.auctions[auction_id].shares:
+            sp.send(txn.recipient, sp.split_tokens(transfer_amount.value, txn.amount, 1000000))
+            transfer_amount.value = transfer_amount.value - sp.split_tokens(transfer_amount.value, txn.amount, 1000000)
+        sp.send(sp.sender, transfer_amount.value)
         del self.data.auctions[auction_id]
         sp.emit(sp.record(auction_id=auction_id,tag="AUCTION_SETTLED"))
 
@@ -171,67 +207,72 @@ class Auction(sp.Contract):
         self.data.pause = ~self.data.pause
 
 
-# @sp.add_test(name="Auction")
-# def test():
-#     sc = sp.test_scenario()
+@sp.add_test(name="Auction")
+def test():
+    sc = sp.test_scenario()
     
-#     sc.h1("Quilt NFT Collection Aucitons")
-#     sc.table_of_contents()
-#     admin   = sp.address("tz1ADMINoooooooooooooooooooooooooooo")
-#     alice   = sp.address("tz1ALICEoooooooooooooooooooooooooooo")
-#     bob     = sp.address("tz1BOBoooooooooooooooooooooooooooooo")
-#     elon    = sp.address("tz1ELONooooooooooooooooooooooooooooo")
-#     mark    = sp.address("tz1MARKooooooooooooooooooooooooooooo")
-#     john    = sp.address("tz1JOHNooooooooooooooooooooooooooooo")
-#     mike    = sp.address("tz1MIKEooooooooooooooooooooooooooooo")
-#     james   = sp.address("tz1JAMESoooooooooooooooooooooooooooo")
-#     joe     = sp.address("tz1JOEoooooooooooooooooooooooooooooo")
-#     adam    = sp.address("tz1ADAMooooooooooooooooooooooooooooo")
-#     sc.show([admin, alice, bob, mark, elon, mark, john, mike, james, joe, adam])
+    sc.h1("Quilt NFT Collection Aucitons")
+    sc.table_of_contents()
+    admin           =   sp.address("tz1ooADMIN")
+    alice           =   sp.address("tz1ooALICE")
+    bob             =   sp.address("tz1ooBOB")
+    elon            =   sp.address("tz1ooELON")
+    mark            =   sp.address("tz1ooMARK")
+    fund_operator   =   sp.address("tz1ooFUNDoOP")
+    sc.show([admin, alice, bob, mark, elon, mark, fund_operator])
+    get_share = Share()
     
-#     sc.h1("Code")
-#     auc = Auction(admin)
-#     sc += auc
+    sc.h1("Code")
+    auc = Auction(mods = [admin], fund_operator = fund_operator)
+    sc += auc
     
-#     sc.h1("Create Auction")
-#     auc_data = sp.record(
-#             creator = alice,
-#             token = sp.record(
-#                 address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
-#                 token_id = sp.nat(0)
-#                 ),
-#             start_time = sp.timestamp(0),
-#             end_time = sp.timestamp(10),
-#             price_increment = sp.tez(1),
-#             current_price = sp.tez(0),
-#             highest_bidder = alice
-#         )
-#     sc += auc.create_auction(auc_data).run(sender = alice)
-#     auc_data = sp.record(
-#             creator = bob,
-#             token = sp.record(
-#                 address = sp.address("KT1Tezooo1zzSmartPyzzDYNAMiCzzpLu4LU"),
-#                 token_id = sp.nat(1)
-#                 ),
-#             start_time = sp.timestamp(0),
-#             end_time = sp.timestamp(10),
-#             price_increment = sp.tez(1),
-#             current_price = sp.tez(0),
-#             highest_bidder = bob
-#         )
-#     sc += auc.create_auction(auc_data).run(sender = bob)
+    sc.h1("Create Auction")
+    auc_data = sp.record(
+            creator = alice,
+            token = sp.record(
+                address = sp.address("KT1TezoooozzSmartPyzzDYNAMiCzzpLu4LU"),
+                token_id = sp.nat(0)
+                ),
+            start_time = sp.timestamp(0),
+            end_time = sp.timestamp(10),
+            price_increment = sp.tez(1),
+            current_price = sp.tez(0),
+            highest_bidder = alice,
+            shares = [get_share.make(recipient= admin, amount=sp.nat(40000)),
+                  get_share.make(recipient= mark, amount=sp.nat(5000)),
+                  get_share.make(recipient= mark, amount=sp.nat(5000)),
+                  get_share.make(recipient= mark, amount=sp.nat(50000)),
+                  get_share.make(recipient= bob, amount=sp.nat(5000))]
+        )
+    sc += auc.create_auction(auc_data).run(sender = alice)
+    auc_data = sp.record(
+            creator = bob,
+            token = sp.record(
+                address = sp.address("KT1Tezooo1zzSmartPyzzDYNAMiCzzpLu4LU"),
+                token_id = sp.nat(1)
+                ),
+            start_time = sp.timestamp(0),
+            end_time = sp.timestamp(10),
+            price_increment = sp.tez(1),
+            current_price = sp.tez(0),
+            highest_bidder = bob,
+            shares = [get_share.make(recipient= admin, amount=sp.nat(40000)),
+                  get_share.make(recipient= mark, amount=sp.nat(5000)),
+                  get_share.make(recipient= bob, amount=sp.nat(5000))]
+        )
+    sc += auc.create_auction(auc_data).run(sender = bob)
     
-#     sc.h1("Bid")
-#     sc += auc.bid(1).run(sender = elon, amount=sp.tez(1))
-#     sc += auc.bid(0).run(sender = elon, amount=sp.tez(1))
-#     sc += auc.bid(0).run(sender = bob, amount=sp.tez(2))
-#     sc += auc.bid(0).run(sender = mark, amount=sp.tez(3))
-#     sc += auc.bid(0).run(sender = elon, amount=sp.tez(3), valid=False)
-#     sc += auc.bid(0).run(sender = admin, amount=sp.tez(5))
+    sc.h1("Bid")
+    sc += auc.bid(1).run(sender = elon, amount=sp.tez(1))
+    sc += auc.bid(0).run(sender = elon, amount=sp.tez(1))
+    sc += auc.bid(0).run(sender = bob, amount=sp.tez(2))
+    sc += auc.bid(0).run(sender = mark, amount=sp.tez(3))
+    sc += auc.bid(0).run(sender = elon, amount=sp.tez(3), valid=False)
+    sc += auc.bid(0).run(sender = admin, amount=sp.tez(5))
     
-#     sc.h1("Cancel Auction")
-#     sc += auc.cancel_auction(sp.nat(1)).run(sender = bob)
+    sc.h1("Cancel Auction")
+    sc += auc.cancel_auction(sp.nat(1)).run(sender = bob)
     
-#     sc.h1("Settle Auction")
-#     sc += auc.settle_auction(sp.nat(0)).run(sender = alice)
-#     sc += auc.toggle_pause().run(sender = admin)
+    sc.h1("Settle Auction")
+    sc += auc.settle_auction(sp.nat(0)).run(sender = alice)
+    sc += auc.toggle_pause().run(sender = admin)
