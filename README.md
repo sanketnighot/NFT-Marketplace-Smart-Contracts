@@ -1,4 +1,5 @@
-# Quilt-Smart-Contracts
+# NFT-Marketplace-Smart-Contracts
+
 
 ## Running Files in Local Environment
 1. Setup Local Smartpy Environment. [Check this](https://smartpy.dev/docs/cli)
