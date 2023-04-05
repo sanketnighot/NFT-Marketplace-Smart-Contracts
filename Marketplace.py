@@ -340,6 +340,7 @@ def test():
         shares = [get_share.make(recipient= admin, amount=sp.nat(400))]
     )
     sc += mp.offer(offer_data).run(sender = admin, amount = sp.tez(1))
+    sc.show([sp.record(contract_balance = mp.balance)])
     offer_data = sp.record(
         creator = bob,
         token = sp.record(
@@ -352,7 +353,7 @@ def test():
     )
 
     sc += mp.offer(offer_data).run(sender = bob, amount = sp.tez(5))
-
+    sc.show([sp.record(contract_balance = mp.balance)])
     
     sc.h1("Marketplace: Fulfill Offer")
     
@@ -367,7 +368,7 @@ def test():
 
     sc.h1("Marketplace: Retract Offer")
     sc += mp.retract_offer(sp.nat(1)).run(sender = bob)
-    sc.show(mp.balance)
+    sc.show([sp.record(contract_balance = mp.balance)])
     
     sc.h1("Marketplace: Create Ask")
     ask_data = sp.record(
@@ -407,8 +408,11 @@ def test():
         shares = [get_share.make(recipient= admin, amount=sp.nat(100000))]
     )
     sc += mp.ask(ask_data).run(sender = bob)
+    sc.show([sp.record(contract_balance = mp.balance)])
+
     sc.h1("Marketplace: Fulfill Ask")
     sc += mp.fulfill_ask(sp.nat(0)).run(sender = elon, amount = sp.tez(100))
+    sc.show([sp.record(contract_balance = mp.balance)])
 
     sc.h1("Marketplace: Retract Ask")
     sc += mp.retract_ask(sp.nat(1)).run(sender = bob)

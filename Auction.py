@@ -225,7 +225,11 @@ def test():
     sc.h1("Code")
     auc = Auction(mods = [admin], fund_operator = fund_operator)
     sc += auc
+    sc.show([sp.record(contract_balance = auc.balance)])
     
+    sc += auc.add_moderator(alice).run(sender = admin)
+    sc += auc.remove_moderator(alice).run(sender = admin)
+
     sc.h1("Create Auction")
     auc_data = sp.record(
             creator = alice,
@@ -261,18 +265,30 @@ def test():
                   get_share.make(recipient= bob, amount=sp.nat(5000))]
         )
     sc += auc.create_auction(auc_data).run(sender = bob)
+    sc.show([sp.record(contract_balance = auc.balance)])
     
     sc.h1("Bid")
     sc += auc.bid(1).run(sender = elon, amount=sp.tez(1))
+    sc.show([sp.record(contract_balance = auc.balance)])
     sc += auc.bid(0).run(sender = elon, amount=sp.tez(1))
+    sc.show([sp.record(contract_balance = auc.balance)])
     sc += auc.bid(0).run(sender = bob, amount=sp.tez(2))
+    sc.show([sp.record(contract_balance = auc.balance)])
     sc += auc.bid(0).run(sender = mark, amount=sp.tez(3))
+    sc.show([sp.record(contract_balance = auc.balance)])
     sc += auc.bid(0).run(sender = elon, amount=sp.tez(3), valid=False)
+    sc.show([sp.record(contract_balance = auc.balance)])
     sc += auc.bid(0).run(sender = admin, amount=sp.tez(5))
+    sc.show([sp.record(contract_balance = auc.balance)])
     
     sc.h1("Cancel Auction")
     sc += auc.cancel_auction(sp.nat(1)).run(sender = bob)
+    sc.show([sp.record(contract_balance = auc.balance)])
     
     sc.h1("Settle Auction")
     sc += auc.settle_auction(sp.nat(0)).run(sender = alice)
+    sc.show([sp.record(contract_balance = auc.balance)])
+    
+    sc.h1("toggle_pause")
     sc += auc.toggle_pause().run(sender = admin)
+    sc += auc.update_platform_fees(1200).run(sender = admin)
